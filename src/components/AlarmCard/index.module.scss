@@ -1,0 +1,151 @@
+@use '@/styles/variables.scss' as *;
+
+.card {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+  border-left: 8rpx solid transparent;
+  transition: all $transition-base;
+
+  &:active {
+    transform: scale(0.99);
+    opacity: 0.95;
+  }
+
+  &.risk-high {
+    border-left-color: $color-risk-high;
+  }
+
+  &.risk-medium {
+    border-left-color: $color-risk-medium;
+  }
+
+  &.risk-low {
+    border-left-color: $color-risk-low;
+  }
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+  padding-bottom: $spacing-md;
+  border-bottom: 1rpx solid $color-divider;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.plateNumber {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+}
+
+.route {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+}
+
+.infoItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.infoLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.infoValue {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+}
+
+.tempValue {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+}
+
+.targetTemp {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-normal;
+  color: $color-text-tertiary;
+}
+
+.highlight {
+  color: $color-error;
+}
+
+.warning {
+  color: $color-warning;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1rpx solid $color-divider;
+}
+
+.driverInfo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.driverDot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+
+  &.status-online {
+    background-color: $color-success;
+  }
+
+  &.status-offline {
+    background-color: $color-text-tertiary;
+  }
+
+  &.status-busy {
+    background-color: $color-warning;
+  }
+}
+
+.driverName {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.riskScore {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  font-weight: $font-weight-medium;
+}
