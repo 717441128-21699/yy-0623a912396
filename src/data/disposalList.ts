@@ -9,6 +9,7 @@ export const disposalList: DisposalOrder[] = [
     shipper: '顺丰冷链',
     createdAt: '2026-06-21 08:45:00',
     createdBy: '调度员小王',
+    shift: 'day',
     overallStatus: 'departed',
     suggestion: '【紧急】高风险告警，建议立即启动应急预案。立即协调最近补冷点。',
     resources: {
@@ -58,6 +59,7 @@ export const disposalList: DisposalOrder[] = [
     shipper: '极兔冷链',
     createdAt: '2026-06-21 10:00:00',
     createdBy: '调度员小王',
+    shift: 'day',
     overallStatus: 'replenished',
     suggestion: '【关注】中风险告警，建议按流程处理。',
     resources: {
@@ -105,8 +107,9 @@ export const disposalList: DisposalOrder[] = [
     plateNumber: '皖A·D4428',
     route: '合肥→上海',
     shipper: '中通冷链',
-    createdAt: '2026-06-21 10:30:00',
+    createdAt: '2026-06-21 22:30:00',
     createdBy: '调度员小李',
+    shift: 'night',
     overallStatus: 'notified',
     suggestion: '【关注】中风险告警，建议按流程处理。注意医药试剂温度敏感。',
     resources: {
@@ -152,8 +155,9 @@ export const disposalList: DisposalOrder[] = [
     plateNumber: '浙A·M2234',
     route: '杭州→金华',
     shipper: '极兔冷链',
-    createdAt: '2026-06-20 16:20:00',
+    createdAt: '2026-06-20 21:20:00',
     createdBy: '调度员小赵',
+    shift: 'night',
     overallStatus: 'verified',
     suggestion: '【常规】低风险告警，建议常规处理。',
     resources: {

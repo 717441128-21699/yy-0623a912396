@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Button } from '@tarojs/components';
 import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classNames from 'classnames';
 import StatusTag from '@/components/StatusTag';
 import { useAppStore } from '@/store/useAppStore';
-import { disposalStatusLabels } from '@/types';
-import type { DisposalStatus, DisposalStep } from '@/types';
+import { disposalStatusLabels, shiftLabels, operationTypeLabels } from '@/types';
+import type { DisposalStatus, DisposalStep, OperationLog, ShiftType } from '@/types';
 import styles from './index.module.scss';
 
 const DisposalDetailPage: React.FC = () => {
@@ -13,8 +13,10 @@ const DisposalDetailPage: React.FC = () => {
   const orderId = router.params.id || '';
 
   const disposalOrders = useAppStore((state) => state.disposalOrders);
+  const operationLogs = useAppStore((state) => state.operationLogs);
   const updateDisposalStepStatus = useAppStore((state) => state.updateDisposalStepStatus);
   const hydrate = useAppStore((state) => state.hydrate);
+  const [showLogs, setShowLogs] = useState(true);
 
   useDidShow(() => {
     hydrate();
@@ -25,6 +27,21 @@ const DisposalDetailPage: React.FC = () => {
     const found = disposalOrders.find((d) => d.id === orderId);
     return found || undefined;
   }, [disposalOrders, orderId]);
+
+  const orderLogs = useMemo(() => {
+    return operationLogs.filter((log) => log.orderId === orderId);
+  }, [operationLogs, orderId]);
+
+  const getLogIcon = (type: OperationLog['type']): string => {
+    const icons = {
+      create_order: '📝',
+      update_step: '✅',
+      update_resources: '🛠️',
+      generate_plan: '💡',
+      shift_handover: '🔄'
+    };
+    return icons[type] || '📋';
+  };
 
   const handleStatusChange = (stepId: string, newStatus: DisposalStatus) => {
     updateDisposalStepStatus(orderId, stepId, newStatus);
@@ -99,6 +116,14 @@ const DisposalDetailPage: React.FC = () => {
       <View className={styles.orderHeader}>
         <Text className={styles.orderId}>{order.id}</Text>
         <Text className={styles.orderInfo}>创建时间：{order.createdAt}</Text>
+        <View className={styles.orderMeta}>
+          <View className={styles.metaTag}>
+            <Text>👤 {order.createdBy}</Text>
+          </View>
+          <View className={styles.metaTag}>
+            <Text>{order.shift === 'day' ? '☀️' : '🌙'} {shiftLabels[order.shift as ShiftType]}</Text>
+          </View>
+        </View>
       </View>
 
       <View className={styles.section}>
@@ -253,6 +278,62 @@ const DisposalDetailPage: React.FC = () => {
             </Text>
           </View>
         </View>
+      </View>
+
+      <View className={classNames(styles.section, styles.logsSection)}>
+        <View className={styles.logsHeader} onClick={() => setShowLogs(!showLogs)}>
+          <View className={styles.logsTitle}>
+            <Text className={styles.sectionTitleIcon}>📜</Text>
+            <Text>操作记录</Text>
+            <Text className={styles.logsCount}>{orderLogs.length} 条</Text>
+          </View>
+          <Text className={styles.logsToggle}>{showLogs ? '▲' : '▼'}</Text>
+        </View>
+
+        {showLogs && (
+          <View className={styles.logsList}>
+            {orderLogs.length > 0 ? (
+              orderLogs.map((log) => (
+                <View key={log.id} className={styles.logItem}>
+                  <View className={styles.logTimeline}>
+                    <View className={styles.logDot} />
+                    <View className={styles.logLine} />
+                  </View>
+                  <View className={styles.logContent}>
+                    <View className={styles.logHeader}>
+                      <Text className={styles.logIcon}>{getLogIcon(log.type)}</Text>
+                      <Text className={styles.logType}>
+                        {operationTypeLabels[log.type]}
+                      </Text>
+                      <View
+                        className={classNames(
+                          styles.logShiftTag,
+                          log.shift === 'day' ? styles.dayShift : styles.nightShift
+                        )}
+                      >
+                        <Text>
+                          {log.shift === 'day' ? '☀️' : '🌙'} {shiftLabels[log.shift]}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text className={styles.logDesc}>{log.description}</Text>
+                    {log.detail && (
+                      <Text className={styles.logDetail}>💬 {log.detail}</Text>
+                    )}
+                    <View className={styles.logMeta}>
+                      <Text className={styles.logOperator}>操作人：{log.operator}</Text>
+                      <Text className={styles.logTime}>{log.timestamp}</Text>
+                    </View>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View className={styles.logsEmpty}>
+                <Text>暂无操作记录</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       <Button

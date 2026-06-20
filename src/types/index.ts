@@ -6,6 +6,15 @@ export type TempZone = 'frozen' | 'chilled' | 'controlled';
 
 export type DisposalStatus = 'pending' | 'notified' | 'departed' | 'replenished' | 'verified';
 
+export type ShiftType = 'day' | 'night';
+
+export type OperationType =
+  | 'create_order'
+  | 'update_step'
+  | 'update_resources'
+  | 'generate_plan'
+  | 'shift_handover';
+
 export interface VehicleAlarm {
   id: string;
   plateNumber: string;
@@ -52,6 +61,7 @@ export interface DisposalOrder {
   shipper: string;
   createdAt: string;
   createdBy: string;
+  shift: ShiftType;
   overallStatus: DisposalStatus;
   steps: DisposalStep[];
   suggestion: string;
@@ -88,3 +98,38 @@ export const riskLevelLabels: Record<RiskLevel, string> = {
   medium: '中风险',
   low: '低风险'
 };
+
+export const shiftLabels: Record<ShiftType, string> = {
+  day: '白班',
+  night: '夜班'
+};
+
+export const operationTypeLabels: Record<OperationType, string> = {
+  create_order: '创建处置单',
+  update_step: '更新步骤状态',
+  update_resources: '更新资源信息',
+  generate_plan: '生成处置方案',
+  shift_handover: '班次交接'
+};
+
+export interface ResourceTemplate {
+  id: string;
+  name: string;
+  routePattern: string;
+  idleRefrigeratedTrucks: number;
+  nearbyColdStorage: string[];
+  dryIceStock: number;
+  driverEtaMinutes: number;
+  createdAt: string;
+}
+
+export interface OperationLog {
+  id: string;
+  orderId: string;
+  type: OperationType;
+  description: string;
+  operator: string;
+  shift: ShiftType;
+  timestamp: string;
+  detail?: string;
+}

@@ -24,6 +24,58 @@
   margin-bottom: $spacing-lg;
 }
 
+.shiftTabs {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+  background-color: rgba(255, 255, 255, 0.12);
+  padding: $spacing-xs;
+  border-radius: $radius-button;
+}
+
+.shiftTab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-sm;
+  transition: all $transition-base;
+
+  &Active {
+    background-color: $color-text-white;
+    color: $color-primary;
+
+    .shiftTabLabel {
+      font-weight: $font-weight-semibold;
+    }
+
+    .shiftTabCount {
+      color: $color-primary;
+    }
+  }
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.shiftTabIcon {
+  font-size: 32rpx;
+}
+
+.shiftTabLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+}
+
+.shiftTabCount {
+  font-size: $font-size-xs;
+  opacity: 0.8;
+  margin-left: $spacing-xs;
+}
+
 .statsRow {
   display: flex;
   gap: $spacing-md;
@@ -48,16 +100,16 @@
     margin-top: 4rpx;
   }
 
-  &.high .statCardNumber {
+  &.pending .statCardNumber {
     color: #fecaca;
   }
 
-  &.medium .statCardNumber {
-    color: #fed7aa;
+  &.processing .statCardNumber {
+    color: #fde68a;
   }
 
-  &.low .statCardNumber {
-    color: #fef08a;
+  &.completed .statCardNumber {
+    color: #bbf7d0;
   }
 }
 
@@ -100,15 +152,36 @@
   }
 }
 
+.riskMiniStats {
+  margin-top: $spacing-sm;
+  text-align: center;
+}
+
+.riskMiniText {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
 .listSection {
   padding: 0 $spacing-lg;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: $spacing-md 0;
 }
 
 .listTitle {
   font-size: $font-size-md;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
-  margin: $spacing-md 0;
+}
+
+.listCount {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
 }
 
 .emptyState {

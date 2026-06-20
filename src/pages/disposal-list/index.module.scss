@@ -21,6 +21,58 @@
 .headerSubtitle {
   font-size: $font-size-sm;
   opacity: 0.8;
+  margin-bottom: $spacing-lg;
+}
+
+.shiftTabs {
+  display: flex;
+  gap: $spacing-sm;
+  background-color: rgba(255, 255, 255, 0.12);
+  padding: $spacing-xs;
+  border-radius: $radius-button;
+}
+
+.shiftTab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-sm;
+  transition: all $transition-base;
+
+  &Active {
+    background-color: $color-text-white;
+    color: $color-primary;
+
+    .shiftTabLabel {
+      font-weight: $font-weight-semibold;
+    }
+
+    .shiftTabCount {
+      color: $color-primary;
+    }
+  }
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.shiftTabIcon {
+  font-size: 32rpx;
+}
+
+.shiftTabLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+}
+
+.shiftTabCount {
+  font-size: $font-size-xs;
+  opacity: 0.8;
+  margin-left: $spacing-xs;
 }
 
 .summarySection {
@@ -74,6 +126,17 @@
   }
 }
 
+.summaryFooter {
+  padding-top: $spacing-sm;
+  border-top: 1px solid $color-border-light;
+  text-align: center;
+}
+
+.summaryFooterText {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
 .filterSection {
   padding: $spacing-md $spacing-lg;
   background-color: $color-bg-page;
@@ -120,36 +183,22 @@
   padding: 0 $spacing-lg;
 }
 
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: $spacing-md 0;
+}
+
 .listTitle {
   font-size: $font-size-md;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
-  margin: $spacing-md 0;
 }
 
-.shiftInfo {
-  background-color: rgba(14, 165, 233, 0.08);
-  border-radius: $radius-md;
-  padding: $spacing-md;
-  margin-bottom: $spacing-md;
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-}
-
-.shiftIcon {
-  font-size: $font-size-xl;
-}
-
-.shiftText {
-  flex: 1;
+.listCount {
   font-size: $font-size-sm;
-  color: $color-text-secondary;
-
-  &Highlight {
-    color: $color-primary;
-    font-weight: $font-weight-medium;
-  }
+  color: $color-text-tertiary;
 }
 
 .emptyState {
@@ -169,4 +218,10 @@
 .emptyText {
   font-size: $font-size-md;
   color: $color-text-tertiary;
+  margin-bottom: $spacing-xs;
+}
+
+.emptySubtext {
+  font-size: $font-size-sm;
+  color: $color-text-hint;
 }

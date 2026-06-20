@@ -5,8 +5,14 @@ import classNames from 'classnames';
 import StatusTag from '@/components/StatusTag';
 import { useAppStore } from '@/store/useAppStore';
 import { generateDisposalPlan, generateSuggestedScript, formatDuration } from '@/utils/risk';
-import { tempZoneLabels, driverStatusLabels, riskLevelLabels } from '@/types';
-import type { AvailableResources, DisposalStep, DisposalOrder } from '@/types';
+import { tempZoneLabels, driverStatusLabels, riskLevelLabels, shiftLabels } from '@/types';
+import type {
+  AvailableResources,
+  DisposalStep,
+  DisposalOrder,
+  ResourceTemplate,
+  ShiftType
+} from '@/types';
 import styles from './index.module.scss';
 
 const RESOURCE_LIMITS = {
@@ -43,7 +49,15 @@ const VehicleDetailPage: React.FC = () => {
   const getAlarmById = useAppStore((state) => state.getAlarmById);
   const addDisposalOrder = useAppStore((state) => state.addDisposalOrder);
   const currentDispatcher = useAppStore((state) => state.currentDispatcher);
+  const currentShift = useAppStore((state) => state.currentShift);
+  const resourceTemplates = useAppStore((state) => state.resourceTemplates);
+  const addResourceTemplate = useAppStore((state) => state.addResourceTemplate);
+  const deleteResourceTemplate = useAppStore((state) => state.deleteResourceTemplate);
   const hydrate = useAppStore((state) => state.hydrate);
+
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [templateName, setTemplateName] = useState('');
 
   useDidShow(() => {
     hydrate();
@@ -104,6 +118,68 @@ const VehicleDetailPage: React.FC = () => {
       ...prev,
       [field]: safeValue
     }));
+  };
+
+  const handleApplyTemplate = (tpl: ResourceTemplate) => {
+    setResources({
+      idleRefrigeratedTrucks: tpl.idleRefrigeratedTrucks,
+      dryIceStock: tpl.dryIceStock,
+      driverEtaMinutes: tpl.driverEtaMinutes,
+      nearbyColdStorage: tpl.nearbyColdStorage
+    });
+    setSelectedColdStorage(tpl.nearbyColdStorage);
+    setShowTemplates(false);
+    Taro.showToast({
+      title: `已套用「${tpl.name}」`,
+      icon: 'success',
+      duration: 1200
+    });
+  };
+
+  const handleSaveTemplate = () => {
+    if (!templateName.trim()) {
+      Taro.showToast({
+        title: '请输入模板名称',
+        icon: 'none'
+      });
+      return;
+    }
+    addResourceTemplate({
+      name: templateName.trim(),
+      routePattern: alarm?.route || '',
+      idleRefrigeratedTrucks: sanitizeResourceValue(
+        'idleRefrigeratedTrucks',
+        String(resources.idleRefrigeratedTrucks)
+      ),
+      nearbyColdStorage: selectedColdStorage,
+      dryIceStock: sanitizeResourceValue('dryIceStock', String(resources.dryIceStock)),
+      driverEtaMinutes: sanitizeResourceValue(
+        'driverEtaMinutes',
+        String(resources.driverEtaMinutes)
+      )
+    });
+    setTemplateName('');
+    setShowSaveDialog(false);
+    Taro.showToast({
+      title: '模板已保存',
+      icon: 'success'
+    });
+  };
+
+  const handleDeleteTemplate = (id: string, name: string) => {
+    Taro.showModal({
+      title: '删除模板',
+      content: `确定删除「${name}」吗？`,
+      success: (res) => {
+        if (res.confirm) {
+          deleteResourceTemplate(id);
+          Taro.showToast({
+            title: '已删除',
+            icon: 'success'
+          });
+        }
+      }
+    });
   };
 
   const handleCreateDisposal = () => {
@@ -175,6 +251,7 @@ const VehicleDetailPage: React.FC = () => {
       shipper: alarm.shipper,
       createdAt: new Date().toLocaleString('zh-CN', { hour12: false }),
       createdBy: currentDispatcher,
+      shift: currentShift as ShiftType,
       overallStatus: 'pending',
       steps,
       suggestion: plan.suggestion,
@@ -219,8 +296,15 @@ const VehicleDetailPage: React.FC = () => {
       <View className={classNames(styles.vehicleHeader, styles[alarm.riskLevel])}>
         <Text className={styles.plateNumber}>{alarm.plateNumber}</Text>
         <Text className={styles.routeInfo}>{alarm.route}</Text>
-        <View className={classNames(styles.riskBadge, styles[alarm.riskLevel])}>
-          <Text>⚠️ {riskLevelLabels[alarm.riskLevel]} · 风险分 {alarm.riskScore}</Text>
+        <View className={styles.headerMeta}>
+          <View className={classNames(styles.riskBadge, styles[alarm.riskLevel])}>
+            <Text>⚠️ {riskLevelLabels[alarm.riskLevel]} · 风险分 {alarm.riskScore}</Text>
+          </View>
+          <View className={styles.shiftBadge}>
+            <Text>
+              {currentShift === 'day' ? '☀️' : '🌙'} {shiftLabels[currentShift]}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -320,6 +404,61 @@ const VehicleDetailPage: React.FC = () => {
           <Text>可用资源</Text>
         </View>
 
+        <View className={styles.templateBar}>
+          <View
+            className={styles.templateToggle}
+            onClick={() => setShowTemplates(!showTemplates)}
+          >
+            <Text className={styles.templateToggleIcon}>📋</Text>
+            <Text className={styles.templateToggleText}>
+              常用方案模板（{resourceTemplates.length}）
+            </Text>
+            <Text className={styles.templateToggleArrow}>
+              {showTemplates ? '▲' : '▼'}
+            </Text>
+          </View>
+          <View
+            className={styles.templateSaveBtn}
+            onClick={() => setShowSaveDialog(true)}
+          >
+            <Text>💾 保存当前</Text>
+          </View>
+        </View>
+
+        {showTemplates && (
+          <View className={styles.templateList}>
+            {resourceTemplates.length > 0 ? (
+              resourceTemplates.map((tpl) => (
+                <View key={tpl.id} className={styles.templateItem}>
+                  <View
+                    className={styles.templateItemMain}
+                    onClick={() => handleApplyTemplate(tpl)}
+                  >
+                    <Text className={styles.templateItemName}>{tpl.name}</Text>
+                    <Text className={styles.templateItemDesc}>
+                      冷藏车{tpl.idleRefrigeratedTrucks}辆 · 干冰{tpl.dryIceStock}kg · ETA
+                      {tpl.driverEtaMinutes}分钟
+                    </Text>
+                    {tpl.routePattern && (
+                      <Text className={styles.templateItemRoute}>线路：{tpl.routePattern}</Text>
+                    )}
+                  </View>
+                  <View
+                    className={styles.templateItemDelete}
+                    onClick={() => handleDeleteTemplate(tpl.id, tpl.name)}
+                  >
+                    <Text>删除</Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View className={styles.templateEmpty}>
+                <Text>暂无保存的模板，点击「保存当前」添加</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         <View className={styles.formRow}>
           <View className={classNames(styles.formItem, styles.formRowItem)}>
             <Text className={styles.formLabel}>空闲冷藏车(0-50辆)</Text>
@@ -383,7 +522,14 @@ const VehicleDetailPage: React.FC = () => {
           <Text className={styles.suggestionContent}>{plan.suggestion}</Text>
 
           <View className={styles.priorityList}>
-            <Text style={{ fontSize: '28rpx', fontWeight: 500, color: '#475569', marginBottom: '16rpx' }}>
+            <Text
+              style={{
+                fontSize: '28rpx',
+                fontWeight: 500,
+                color: '#475569',
+                marginBottom: '16rpx'
+              }}
+            >
               推荐联系顺序
             </Text>
             {plan.priority.map((type, index) => (
@@ -422,6 +568,35 @@ const VehicleDetailPage: React.FC = () => {
           生成处置单
         </Button>
       </View>
+
+      {showSaveDialog && (
+        <View className={styles.dialogMask} onClick={() => setShowSaveDialog(false)}>
+          <View className={styles.dialog} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.dialogTitle}>保存资源模板</Text>
+            <Input
+              className={styles.dialogInput}
+              value={templateName}
+              onInput={(e) => setTemplateName(e.detail.value)}
+              placeholder="输入模板名称，如：白班常用方案"
+              maxlength={20}
+            />
+            <View className={styles.dialogActions}>
+              <View
+                className={classNames(styles.dialogBtn, styles.dialogBtnCancel)}
+                onClick={() => setShowSaveDialog(false)}
+              >
+                <Text>取消</Text>
+              </View>
+              <View
+                className={classNames(styles.dialogBtn, styles.dialogBtnConfirm)}
+                onClick={handleSaveTemplate}
+              >
+                <Text>保存</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
