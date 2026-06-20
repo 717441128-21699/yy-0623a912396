@@ -55,6 +55,16 @@ export const operationLogs: OperationLog[] = [
   {
     id: 'log_005',
     orderId: 'D20260621002',
+    type: 'generate_plan',
+    description: '生成处置方案：【关注】中风险告警，建议按流程处理。...',
+    operator: '调度员小王',
+    shift: 'day',
+    timestamp: '2026-06-21 09:59:00',
+    detail: '【关注】中风险告警，建议按流程处理。'
+  },
+  {
+    id: 'log_006',
+    orderId: 'D20260621002',
     type: 'create_order',
     description: '创建处置单，共 3 个处置步骤',
     operator: '调度员小王',
@@ -63,7 +73,7 @@ export const operationLogs: OperationLog[] = [
     detail: '中风险告警，按流程处理'
   },
   {
-    id: 'log_006',
+    id: 'log_007',
     orderId: 'D20260621002',
     type: 'update_step',
     description: '驾驶员 王师傅 状态更新为「已补冷」',
@@ -73,7 +83,7 @@ export const operationLogs: OperationLog[] = [
     detail: '已到达台州冷藏站，正在补冷'
   },
   {
-    id: 'log_007',
+    id: 'log_008',
     orderId: 'D20260621002',
     type: 'update_step',
     description: '补冷点 台州冷藏站 状态更新为「已补冷」',
@@ -83,7 +93,17 @@ export const operationLogs: OperationLog[] = [
     detail: '车辆已进站补冷'
   },
   {
-    id: 'log_008',
+    id: 'log_009',
+    orderId: 'D20260621003',
+    type: 'generate_plan',
+    description: '生成处置方案：【关注】中风险告警，建议按流程处理。注意医药...',
+    operator: '调度员小李',
+    shift: 'night',
+    timestamp: '2026-06-21 22:29:00',
+    detail: '【关注】中风险告警，建议按流程处理。注意医药试剂温度敏感。'
+  },
+  {
+    id: 'log_010',
     orderId: 'D20260621003',
     type: 'create_order',
     description: '创建处置单，共 3 个处置步骤',
@@ -93,7 +113,7 @@ export const operationLogs: OperationLog[] = [
     detail: '中风险告警，注意医药试剂温度敏感'
   },
   {
-    id: 'log_009',
+    id: 'log_011',
     orderId: 'D20260621003',
     type: 'update_step',
     description: '驾驶员 刘师傅 状态更新为「已通知」',
@@ -103,7 +123,17 @@ export const operationLogs: OperationLog[] = [
     detail: '司机表示正在检查，温度缓慢上升'
   },
   {
-    id: 'log_010',
+    id: 'log_012',
+    orderId: 'D20260620008',
+    type: 'generate_plan',
+    description: '生成处置方案：【常规】低风险告警，建议常规处理。...',
+    operator: '调度员小赵',
+    shift: 'night',
+    timestamp: '2026-06-20 21:19:00',
+    detail: '【常规】低风险告警，建议常规处理。'
+  },
+  {
+    id: 'log_013',
     orderId: 'D20260620008',
     type: 'create_order',
     description: '创建处置单，共 3 个处置步骤',
@@ -113,7 +143,7 @@ export const operationLogs: OperationLog[] = [
     detail: '低风险告警，常规处理'
   },
   {
-    id: 'log_011',
+    id: 'log_014',
     orderId: 'D20260620008',
     type: 'update_step',
     description: '货主 极兔冷链-陈经理 状态更新为「已复核」',
@@ -123,7 +153,7 @@ export const operationLogs: OperationLog[] = [
     detail: '已通知并说明情况'
   },
   {
-    id: 'log_012',
+    id: 'log_015',
     orderId: 'D20260620008',
     type: 'update_step',
     description: '补冷点 义乌冷库 状态更新为「已复核」',
@@ -133,7 +163,7 @@ export const operationLogs: OperationLog[] = [
     detail: '已取消预约'
   },
   {
-    id: 'log_013',
+    id: 'log_016',
     orderId: 'D20260620008',
     type: 'update_step',
     description: '驾驶员 周师傅 状态更新为「已复核」',

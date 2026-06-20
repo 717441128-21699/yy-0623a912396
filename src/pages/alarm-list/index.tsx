@@ -5,11 +5,27 @@ import classNames from 'classnames';
 import AlarmCard from '@/components/AlarmCard';
 import { useAppStore } from '@/store/useAppStore';
 import { sortAlarmsByRisk } from '@/utils/risk';
-import type { RiskLevel, ShiftType, DisposalOrder } from '@/types';
-import { shiftLabels } from '@/types';
+import type { RiskLevel, ShiftType, DisposalOrder, DisposalStatus } from '@/types';
+import { shiftLabels, riskLevelLabels } from '@/types';
 import styles from './index.module.scss';
 
 type FilterType = 'all' | RiskLevel;
+
+function getShiftFromTime(alarmTime: string): ShiftType {
+  const hour = parseInt(alarmTime.slice(11, 13), 10);
+  return hour >= 8 && hour < 20 ? 'day' : 'night';
+}
+
+function getVehicleStatus(
+  alarm: any,
+  orderMap: Map<string, DisposalOrder>
+): { status: DisposalStatus | 'pending'; order?: DisposalOrder } {
+  const order = orderMap.get(alarm.id);
+  if (order) {
+    return { status: order.overallStatus, order };
+  }
+  return { status: 'pending' };
+}
 
 const AlarmListPage: React.FC = () => {
   const alarms = useAppStore((state) => state.alarms);
@@ -23,34 +39,41 @@ const AlarmListPage: React.FC = () => {
     hydrate();
   });
 
+  const shiftAlarms = useMemo(() => {
+    return alarms.filter((a) => getShiftFromTime(a.alarmTime) === currentShift);
+  }, [alarms, currentShift]);
+
   const shiftOrderMap = useMemo(() => {
     const map = new Map<string, DisposalOrder>();
-    const shiftOrders = disposalOrders.filter((o) => o.shift === currentShift);
-    shiftOrders.forEach((order) => {
+    const shiftOrderIds = new Set(shiftAlarms.map((a) => a.id));
+    disposalOrders.forEach((order) => {
+      if (!shiftOrderIds.has(order.vehicleId)) return;
       const existing = map.get(order.vehicleId);
       if (!existing || order.createdAt > existing.createdAt) {
         map.set(order.vehicleId, order);
       }
     });
     return map;
-  }, [disposalOrders, currentShift]);
-
-  const shiftAlarms = useMemo(() => {
-    return alarms.filter((a) => shiftOrderMap.has(a.id));
-  }, [alarms, shiftOrderMap]);
+  }, [disposalOrders, shiftAlarms]);
 
   const shiftStats = useMemo(() => {
-    const vehicleOrders = Array.from(shiftOrderMap.values());
-    const pending = vehicleOrders.filter((o) => o.overallStatus === 'pending').length;
-    const processing = vehicleOrders.filter(
-      (o) =>
-        o.overallStatus === 'notified' ||
-        o.overallStatus === 'departed' ||
-        o.overallStatus === 'replenished'
-    ).length;
-    const completed = vehicleOrders.filter((o) => o.overallStatus === 'verified').length;
-    return { total: vehicleOrders.length, pending, processing, completed };
-  }, [shiftOrderMap]);
+    let pending = 0;
+    let processing = 0;
+    let completed = 0;
+
+    shiftAlarms.forEach((alarm) => {
+      const { status } = getVehicleStatus(alarm, shiftOrderMap);
+      if (status === 'pending') {
+        pending++;
+      } else if (status === 'verified') {
+        completed++;
+      } else {
+        processing++;
+      }
+    });
+
+    return { total: shiftAlarms.length, pending, processing, completed };
+  }, [shiftAlarms, shiftOrderMap]);
 
   const filteredAlarms = useMemo(() => {
     let result = [...shiftAlarms];
@@ -59,6 +82,25 @@ const AlarmListPage: React.FC = () => {
     }
     return sortAlarmsByRisk(result);
   }, [shiftAlarms, filter]);
+
+  const filteredStats = useMemo(() => {
+    let pending = 0;
+    let processing = 0;
+    let completed = 0;
+
+    filteredAlarms.forEach((alarm) => {
+      const { status } = getVehicleStatus(alarm, shiftOrderMap);
+      if (status === 'pending') {
+        pending++;
+      } else if (status === 'verified') {
+        completed++;
+      } else {
+        processing++;
+      }
+    });
+
+    return { total: filteredAlarms.length, pending, processing, completed };
+  }, [filteredAlarms, shiftOrderMap]);
 
   const riskStats = useMemo(() => {
     return {
@@ -90,12 +132,18 @@ const AlarmListPage: React.FC = () => {
 
   const handleShiftChange = (shift: ShiftType) => {
     setShift(shift);
+    setFilter('all');
   };
 
   const handleCardClick = (alarmId: string) => {
     Taro.navigateTo({
       url: `/pages/vehicle-detail/index?id=${alarmId}`
     });
+  };
+
+  const getFilterSummaryText = () => {
+    const shiftText = `${shiftLabels[currentShift]}${filter === 'all' ? '全部' : riskLevelLabels[filter]}`;
+    return `${shiftText}：待处理${filteredStats.pending} / 处理中${filteredStats.processing} / 已完成${filteredStats.completed}`;
   };
 
   return (
@@ -106,8 +154,8 @@ const AlarmListPage: React.FC = () => {
 
         <View className={styles.shiftTabs}>
           {shiftTabs.map((tab) => {
-            const tabOrderCount = disposalOrders.filter(
-              (o) => o.shift === tab.key
+            const tabAlarmCount = alarms.filter(
+              (a) => getShiftFromTime(a.alarmTime) === tab.key
             ).length;
             return (
               <View
@@ -121,7 +169,7 @@ const AlarmListPage: React.FC = () => {
                 <Text className={styles.shiftTabIcon}>{tab.icon}</Text>
                 <Text className={styles.shiftTabLabel}>{shiftLabels[tab.key]}</Text>
                 <Text className={styles.shiftTabCount}>
-                  {tabOrderCount}单
+                  {tabAlarmCount}辆
                 </Text>
               </View>
             );
@@ -163,6 +211,14 @@ const AlarmListPage: React.FC = () => {
             {riskStats.medium} / 低 {riskStats.low}
           </Text>
         </View>
+
+        {filter !== 'all' && (
+          <View className={styles.filterSummary}>
+            <Text className={styles.filterSummaryText}>
+              📍 当前筛选：{getFilterSummaryText()}
+            </Text>
+          </View>
+        )}
       </View>
 
       <ScrollView scrollY className={styles.listSection}>
@@ -175,10 +231,11 @@ const AlarmListPage: React.FC = () => {
 
         {filteredAlarms.length > 0 ? (
           filteredAlarms.map((alarm) => {
-            const order = shiftOrderMap.get(alarm.id);
+            const { status, order } = getVehicleStatus(alarm, shiftOrderMap);
+            const displayStatus = status === 'pending' ? undefined : status;
             return (
               <View key={alarm.id} onClick={() => handleCardClick(alarm.id)}>
-                <AlarmCard alarm={alarm} disposalStatus={order?.overallStatus} />
+                <AlarmCard alarm={alarm} disposalStatus={displayStatus} />
               </View>
             );
           })
@@ -186,7 +243,8 @@ const AlarmListPage: React.FC = () => {
           <View className={styles.emptyState}>
             <Text className={styles.emptyIcon}>❄️</Text>
             <Text className={styles.emptyText}>
-              {shiftLabels[currentShift]}暂无处置车辆
+              {shiftLabels[currentShift]}
+              {filter === 'all' ? '暂无处置车辆' : `暂无${riskLevelLabels[filter]}车辆`}
             </Text>
             <Text className={styles.emptySubtext}>切换班次或下拉刷新查看</Text>
           </View>

@@ -94,7 +94,7 @@ export const alarmList: VehicleAlarm[] = [
     riskLevel: 'medium',
     riskScore: 48,
     cargoDescription: '医药试剂',
-    alarmTime: '2026-06-21 10:20:00'
+    alarmTime: '2026-06-21 22:15:00'
   },
   {
     id: '6',
@@ -113,7 +113,7 @@ export const alarmList: VehicleAlarm[] = [
     riskLevel: 'low',
     riskScore: 32,
     cargoDescription: '水果',
-    alarmTime: '2026-06-21 10:45:00'
+    alarmTime: '2026-06-21 22:35:00'
   },
   {
     id: '7',
@@ -132,7 +132,7 @@ export const alarmList: VehicleAlarm[] = [
     riskLevel: 'high',
     riskScore: 82,
     cargoDescription: '海鲜水产',
-    alarmTime: '2026-06-21 11:00:00'
+    alarmTime: '2026-06-21 23:10:00'
   },
   {
     id: '8',
@@ -151,6 +151,6 @@ export const alarmList: VehicleAlarm[] = [
     riskLevel: 'low',
     riskScore: 28,
     cargoDescription: '鲜花',
-    alarmTime: '2026-06-21 11:30:00'
+    alarmTime: '2026-06-20 23:50:00'
   }
 ];
