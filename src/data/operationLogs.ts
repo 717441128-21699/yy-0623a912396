@@ -2,6 +2,17 @@ import type { OperationLog } from '@/types';
 
 export const operationLogs: OperationLog[] = [
   {
+    id: 'log_000',
+    orderId: 'D20260621001',
+    type: 'generate_plan',
+    description: '生成处置方案：高风险告警，优先联系司机确认情况，...',
+    operator: '调度员小王',
+    shift: 'day',
+    timestamp: '2026-06-21 08:44:00',
+    detail:
+      '高风险告警，优先联系司机确认情况，同步补冷点准备资源，最后通知货主避免投诉。建议立即启动应急预案，司机20分钟内无法修复则安排转货。'
+  },
+  {
     id: 'log_001',
     orderId: 'D20260621001',
     type: 'create_order',

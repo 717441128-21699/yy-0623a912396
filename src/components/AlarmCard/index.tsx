@@ -4,16 +4,17 @@ import Taro from '@tarojs/taro';
 import classNames from 'classnames';
 import StatusTag from '@/components/StatusTag';
 import { formatDuration } from '@/utils/risk';
-import { tempZoneLabels, driverStatusLabels } from '@/types';
-import type { VehicleAlarm } from '@/types';
+import { tempZoneLabels, driverStatusLabels, disposalStatusLabels } from '@/types';
+import type { VehicleAlarm, DisposalStatus } from '@/types';
 import styles from './index.module.scss';
 
 interface AlarmCardProps {
   alarm: VehicleAlarm;
+  disposalStatus?: DisposalStatus;
   onClick?: () => void;
 }
 
-const AlarmCard: React.FC<AlarmCardProps> = ({ alarm, onClick }) => {
+const AlarmCard: React.FC<AlarmCardProps> = ({ alarm, disposalStatus, onClick }) => {
   const handleClick = () => {
     if (onClick) {
       onClick();
@@ -32,6 +33,22 @@ const AlarmCard: React.FC<AlarmCardProps> = ({ alarm, onClick }) => {
 
   const riskInfo = riskLevelMap[alarm.riskLevel];
 
+  const disposalTagType = (status?: DisposalStatus): 'success' | 'warning' | 'error' | 'online' => {
+    if (!status) return 'online';
+    switch (status) {
+      case 'verified': return 'success';
+      case 'replenished': return 'success';
+      case 'departed': return 'warning';
+      case 'notified': return 'warning';
+      default: return 'error';
+    }
+  };
+
+  const disposalTagText = (status?: DisposalStatus): string => {
+    if (!status) return '待处置';
+    return disposalStatusLabels[status];
+  };
+
   return (
     <View
       className={classNames(styles.card, styles[`risk-${alarm.riskLevel}`])}
@@ -43,7 +60,11 @@ const AlarmCard: React.FC<AlarmCardProps> = ({ alarm, onClick }) => {
           <StatusTag type={riskInfo.type} text={riskInfo.label} size="sm" />
         </View>
         <View className={styles.rightSection}>
-          <Text className={styles.route}>{alarm.route}</Text>
+          <StatusTag
+            type={disposalTagType(disposalStatus)}
+            text={disposalTagText(disposalStatus)}
+            size="sm"
+          />
         </View>
       </View>
 

@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import AlarmCard from '@/components/AlarmCard';
 import { useAppStore } from '@/store/useAppStore';
 import { sortAlarmsByRisk } from '@/utils/risk';
-import type { RiskLevel, ShiftType } from '@/types';
+import type { RiskLevel, ShiftType, DisposalOrder } from '@/types';
 import { shiftLabels } from '@/types';
 import styles from './index.module.scss';
 
@@ -24,42 +24,50 @@ const AlarmListPage: React.FC = () => {
   });
 
   const shiftOrderMap = useMemo(() => {
-    const map = new Map<string, typeof disposalOrders[0]>();
-    disposalOrders.forEach((order) => {
-      map.set(order.vehicleId, order);
+    const map = new Map<string, DisposalOrder>();
+    const shiftOrders = disposalOrders.filter((o) => o.shift === currentShift);
+    shiftOrders.forEach((order) => {
+      const existing = map.get(order.vehicleId);
+      if (!existing || order.createdAt > existing.createdAt) {
+        map.set(order.vehicleId, order);
+      }
     });
     return map;
-  }, [disposalOrders]);
+  }, [disposalOrders, currentShift]);
+
+  const shiftAlarms = useMemo(() => {
+    return alarms.filter((a) => shiftOrderMap.has(a.id));
+  }, [alarms, shiftOrderMap]);
 
   const shiftStats = useMemo(() => {
-    const shiftOrders = disposalOrders.filter((o) => o.shift === currentShift);
-    const pending = shiftOrders.filter((o) => o.overallStatus === 'pending').length;
-    const processing = shiftOrders.filter(
+    const vehicleOrders = Array.from(shiftOrderMap.values());
+    const pending = vehicleOrders.filter((o) => o.overallStatus === 'pending').length;
+    const processing = vehicleOrders.filter(
       (o) =>
         o.overallStatus === 'notified' ||
         o.overallStatus === 'departed' ||
         o.overallStatus === 'replenished'
     ).length;
-    const completed = shiftOrders.filter((o) => o.overallStatus === 'verified').length;
-    return { total: shiftOrders.length, pending, processing, completed };
-  }, [disposalOrders, currentShift]);
+    const completed = vehicleOrders.filter((o) => o.overallStatus === 'verified').length;
+    return { total: vehicleOrders.length, pending, processing, completed };
+  }, [shiftOrderMap]);
 
   const filteredAlarms = useMemo(() => {
-    let result = [...alarms];
+    let result = [...shiftAlarms];
     if (filter !== 'all') {
       result = result.filter((a) => a.riskLevel === filter);
     }
     return sortAlarmsByRisk(result);
-  }, [alarms, filter]);
+  }, [shiftAlarms, filter]);
 
   const riskStats = useMemo(() => {
     return {
-      total: alarms.length,
-      high: alarms.filter((a) => a.riskLevel === 'high').length,
-      medium: alarms.filter((a) => a.riskLevel === 'medium').length,
-      low: alarms.filter((a) => a.riskLevel === 'low').length
+      total: shiftAlarms.length,
+      high: shiftAlarms.filter((a) => a.riskLevel === 'high').length,
+      medium: shiftAlarms.filter((a) => a.riskLevel === 'medium').length,
+      low: shiftAlarms.filter((a) => a.riskLevel === 'low').length
     };
-  }, [alarms]);
+  }, [shiftAlarms]);
 
   usePullDownRefresh(() => {
     hydrate();
@@ -97,22 +105,27 @@ const AlarmListPage: React.FC = () => {
         <Text className={styles.headerSubtitle}>当前告警车辆实时监控</Text>
 
         <View className={styles.shiftTabs}>
-          {shiftTabs.map((tab) => (
-            <View
-              key={tab.key}
-              className={classNames(
-                styles.shiftTab,
-                currentShift === tab.key && styles.shiftTabActive
-              )}
-              onClick={() => handleShiftChange(tab.key)}
-            >
-              <Text className={styles.shiftTabIcon}>{tab.icon}</Text>
-              <Text className={styles.shiftTabLabel}>{shiftLabels[tab.key]}</Text>
-              <Text className={styles.shiftTabCount}>
-                {currentShift === tab.key ? shiftStats.total + '单' : '切换'}
-              </Text>
-            </View>
-          ))}
+          {shiftTabs.map((tab) => {
+            const tabOrderCount = disposalOrders.filter(
+              (o) => o.shift === tab.key
+            ).length;
+            return (
+              <View
+                key={tab.key}
+                className={classNames(
+                  styles.shiftTab,
+                  currentShift === tab.key && styles.shiftTabActive
+                )}
+                onClick={() => handleShiftChange(tab.key)}
+              >
+                <Text className={styles.shiftTabIcon}>{tab.icon}</Text>
+                <Text className={styles.shiftTabLabel}>{shiftLabels[tab.key]}</Text>
+                <Text className={styles.shiftTabCount}>
+                  {tabOrderCount}单
+                </Text>
+              </View>
+            );
+          })}
         </View>
 
         <View className={styles.statsRow}>
@@ -146,15 +159,17 @@ const AlarmListPage: React.FC = () => {
 
         <View className={styles.riskMiniStats}>
           <Text className={styles.riskMiniText}>
-            共 {riskStats.total} 辆告警 · 高 {riskStats.high} / 中 {riskStats.medium} / 低{' '}
-            {riskStats.low}
+            {shiftLabels[currentShift]}共 {riskStats.total} 辆 · 高 {riskStats.high} / 中{' '}
+            {riskStats.medium} / 低 {riskStats.low}
           </Text>
         </View>
       </View>
 
       <ScrollView scrollY className={styles.listSection}>
         <View className={styles.listHeader}>
-          <Text className={styles.listTitle}>告警列表</Text>
+          <Text className={styles.listTitle}>
+            {shiftLabels[currentShift]}处置车辆
+          </Text>
           <Text className={styles.listCount}>{filteredAlarms.length} 辆车</Text>
         </View>
 
@@ -170,7 +185,10 @@ const AlarmListPage: React.FC = () => {
         ) : (
           <View className={styles.emptyState}>
             <Text className={styles.emptyIcon}>❄️</Text>
-            <Text className={styles.emptyText}>暂无告警车辆</Text>
+            <Text className={styles.emptyText}>
+              {shiftLabels[currentShift]}暂无处置车辆
+            </Text>
+            <Text className={styles.emptySubtext}>切换班次或下拉刷新查看</Text>
           </View>
         )}
       </ScrollView>

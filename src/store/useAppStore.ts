@@ -173,16 +173,28 @@ export const useAppStore = create<AppState>((set, get) => ({
       const newOrders = [order, ...state.disposalOrders];
       saveDisposalOrders(newOrders);
 
-      const log: OperationLog = {
+      const now = Date.now();
+      const planLog: OperationLog = {
+        id: genId('log'),
+        orderId: order.id,
+        type: 'generate_plan' as OperationType,
+        description: `生成处置方案：${order.suggestion.slice(0, 50)}${order.suggestion.length > 50 ? '...' : ''}`,
+        operator: state.currentDispatcher,
+        shift: state.currentShift,
+        timestamp: new Date(now - 1000).toLocaleString('zh-CN', { hour12: false }),
+        detail: order.suggestion
+      };
+
+      const createLog: OperationLog = {
         id: genId('log'),
         orderId: order.id,
         type: 'create_order' as OperationType,
         description: `创建处置单，共 ${order.steps.length} 个处置步骤`,
         operator: state.currentDispatcher,
         shift: state.currentShift,
-        timestamp: new Date().toLocaleString('zh-CN', { hour12: false })
+        timestamp: new Date(now).toLocaleString('zh-CN', { hour12: false })
       };
-      const newLogs = [log, ...state.operationLogs];
+      const newLogs = [createLog, planLog, ...state.operationLogs];
       saveLogs(newLogs);
 
       console.log('[Store] 新增处置单:', order.id, '当前总数:', newOrders.length);
