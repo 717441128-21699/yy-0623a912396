@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Button } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
+import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classNames from 'classnames';
 import StatusTag from '@/components/StatusTag';
 import { useAppStore } from '@/store/useAppStore';
@@ -12,59 +12,26 @@ const DisposalDetailPage: React.FC = () => {
   const router = useRouter();
   const orderId = router.params.id || '';
 
-  const getDisposalById = useAppStore((state) => state.getDisposalById);
+  const disposalOrders = useAppStore((state) => state.disposalOrders);
   const updateDisposalStepStatus = useAppStore((state) => state.updateDisposalStepStatus);
-  const updateOverallStatus = useAppStore((state) => state.updateOverallStatus);
+  const hydrate = useAppStore((state) => state.hydrate);
 
-  const order = useMemo(() => getDisposalById(orderId), [orderId, getDisposalById]);
-  const [, forceUpdate] = useState(0);
+  useDidShow(() => {
+    hydrate();
+    console.log('[DisposalDetail] useDidShow 触发 hydrate, orderId:', orderId);
+  });
+
+  const order = useMemo(() => {
+    const found = disposalOrders.find((d) => d.id === orderId);
+    return found || undefined;
+  }, [disposalOrders, orderId]);
 
   const handleStatusChange = (stepId: string, newStatus: DisposalStatus) => {
     updateDisposalStepStatus(orderId, stepId, newStatus);
-
-    if (order) {
-      const updatedSteps = order.steps.map((s) =>
-        s.id === stepId ? { ...s, status: newStatus } : s
-      );
-
-      const allVerified = updatedSteps.every((s) => s.status === 'verified');
-      const anyPending = updatedSteps.some((s) => s.status === 'pending');
-      const allReplenished = updatedSteps.every(
-        (s) => s.status === 'replenished' || s.status === 'verified'
-      );
-      const anyDeparted = updatedSteps.some(
-        (s) => s.status === 'departed' || s.status === 'replenished' || s.status === 'verified'
-      );
-      const anyNotified = updatedSteps.some(
-        (s) =>
-          s.status === 'notified' ||
-          s.status === 'departed' ||
-          s.status === 'replenished' ||
-          s.status === 'verified'
-      );
-
-      let overallStatus: DisposalStatus = 'pending';
-      if (allVerified) {
-        overallStatus = 'verified';
-      } else if (allReplenished && !allVerified) {
-        overallStatus = 'replenished';
-      } else if (anyDeparted && !allReplenished) {
-        overallStatus = 'departed';
-      } else if (anyNotified && !anyDeparted) {
-        overallStatus = 'notified';
-      } else if (anyPending && !anyNotified) {
-        overallStatus = 'pending';
-      }
-
-      updateOverallStatus(orderId, overallStatus);
-    }
-
-    forceUpdate((n) => n + 1);
-
     Taro.showToast({
       title: '状态已更新',
       icon: 'success',
-      duration: 1000
+      duration: 800
     });
   };
 

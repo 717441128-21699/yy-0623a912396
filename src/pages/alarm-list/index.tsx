@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView } from '@tarojs/components';
-import Taro, { usePullDownRefresh } from '@tarojs/taro';
+import Taro, { usePullDownRefresh, useDidShow } from '@tarojs/taro';
 import classNames from 'classnames';
 import AlarmCard from '@/components/AlarmCard';
 import { useAppStore } from '@/store/useAppStore';
@@ -12,8 +12,12 @@ type FilterType = 'all' | RiskLevel;
 
 const AlarmListPage: React.FC = () => {
   const alarms = useAppStore((state) => state.alarms);
+  const hydrate = useAppStore((state) => state.hydrate);
   const [filter, setFilter] = useState<FilterType>('all');
-  const [refreshing, setRefreshing] = useState(false);
+
+  useDidShow(() => {
+    hydrate();
+  });
 
   const filteredAlarms = useMemo(() => {
     let result = [...alarms];
@@ -33,11 +37,10 @@ const AlarmListPage: React.FC = () => {
   }, [alarms]);
 
   usePullDownRefresh(() => {
-    setRefreshing(true);
+    hydrate();
     setTimeout(() => {
-      setRefreshing(false);
       Taro.stopPullDownRefresh();
-    }, 1000);
+    }, 800);
   });
 
   const filterTabs: { key: FilterType; label: string }[] = [

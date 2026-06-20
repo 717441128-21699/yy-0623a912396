@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView } from '@tarojs/components';
-import Taro, { usePullDownRefresh } from '@tarojs/taro';
+import Taro, { usePullDownRefresh, useDidShow } from '@tarojs/taro';
 import classNames from 'classnames';
 import DisposalCard from '@/components/DisposalCard';
 import { useAppStore } from '@/store/useAppStore';
@@ -11,8 +11,20 @@ type FilterType = 'all' | 'pending' | 'inProgress' | 'done';
 
 const DisposalListPage: React.FC = () => {
   const disposalOrders = useAppStore((state) => state.disposalOrders);
+  const hydrate = useAppStore((state) => state.hydrate);
   const [filter, setFilter] = useState<FilterType>('all');
-  const [refreshing, setRefreshing] = useState(false);
+
+  useDidShow(() => {
+    hydrate();
+    console.log('[DisposalList] useDidShow 触发 hydrate, 总数:', disposalOrders.length);
+  });
+
+  usePullDownRefresh(() => {
+    hydrate();
+    setTimeout(() => {
+      Taro.stopPullDownRefresh();
+    }, 600);
+  });
 
   const filteredOrders = useMemo(() => {
     if (filter === 'all') return disposalOrders;
@@ -40,14 +52,6 @@ const DisposalListPage: React.FC = () => {
       done: disposalOrders.filter((o) => o.overallStatus === 'verified').length
     };
   }, [disposalOrders]);
-
-  usePullDownRefresh(() => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-      Taro.stopPullDownRefresh();
-    }, 1000);
-  });
 
   const filterTabs: { key: FilterType; label: string }[] = [
     { key: 'all', label: '全部' },

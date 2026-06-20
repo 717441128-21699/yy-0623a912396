@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Input, Button } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
+import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classNames from 'classnames';
 import StatusTag from '@/components/StatusTag';
 import { useAppStore } from '@/store/useAppStore';
@@ -9,6 +9,33 @@ import { tempZoneLabels, driverStatusLabels, riskLevelLabels } from '@/types';
 import type { AvailableResources, DisposalStep, DisposalOrder } from '@/types';
 import styles from './index.module.scss';
 
+const RESOURCE_LIMITS = {
+  idleRefrigeratedTrucks: { min: 0, max: 50, default: 0 },
+  dryIceStock: { min: 0, max: 500, default: 0 },
+  driverEtaMinutes: { min: 1, max: 600, default: 30 }
+};
+
+function sanitizeResourceValue(
+  field: keyof typeof RESOURCE_LIMITS,
+  rawValue: string
+): number {
+  const trimmed = (rawValue || '').trim();
+  if (trimmed === '' || trimmed === '-') {
+    return RESOURCE_LIMITS[field].default;
+  }
+  let num = parseInt(trimmed, 10);
+  if (isNaN(num)) {
+    return RESOURCE_LIMITS[field].default;
+  }
+  if (num < RESOURCE_LIMITS[field].min) {
+    num = RESOURCE_LIMITS[field].min;
+  }
+  if (num > RESOURCE_LIMITS[field].max) {
+    num = RESOURCE_LIMITS[field].max;
+  }
+  return num;
+}
+
 const VehicleDetailPage: React.FC = () => {
   const router = useRouter();
   const vehicleId = router.params.id || '';
@@ -16,6 +43,11 @@ const VehicleDetailPage: React.FC = () => {
   const getAlarmById = useAppStore((state) => state.getAlarmById);
   const addDisposalOrder = useAppStore((state) => state.addDisposalOrder);
   const currentDispatcher = useAppStore((state) => state.currentDispatcher);
+  const hydrate = useAppStore((state) => state.hydrate);
+
+  useDidShow(() => {
+    hydrate();
+  });
 
   const alarm = useMemo(() => getAlarmById(vehicleId), [vehicleId, getAlarmById]);
 
@@ -36,8 +68,16 @@ const VehicleDetailPage: React.FC = () => {
   const plan = useMemo(() => {
     if (!alarm) return null;
     return generateDisposalPlan(alarm, {
-      ...resources,
-      nearbyColdStorage: selectedColdStorage
+      idleRefrigeratedTrucks: sanitizeResourceValue(
+        'idleRefrigeratedTrucks',
+        String(resources.idleRefrigeratedTrucks)
+      ),
+      nearbyColdStorage: selectedColdStorage,
+      dryIceStock: sanitizeResourceValue('dryIceStock', String(resources.dryIceStock)),
+      driverEtaMinutes: sanitizeResourceValue(
+        'driverEtaMinutes',
+        String(resources.driverEtaMinutes)
+      )
     });
   }, [alarm, resources, selectedColdStorage]);
 
@@ -58,15 +98,29 @@ const VehicleDetailPage: React.FC = () => {
   };
 
   const handleInputChange = (field: keyof AvailableResources, value: string) => {
-    const numValue = parseInt(value) || 0;
+    if (field === 'nearbyColdStorage') return;
+    const safeValue = sanitizeResourceValue(field as any, value);
     setResources((prev) => ({
       ...prev,
-      [field]: numValue
+      [field]: safeValue
     }));
   };
 
   const handleCreateDisposal = () => {
     if (!alarm || !plan) return;
+
+    const safeResources: AvailableResources = {
+      idleRefrigeratedTrucks: sanitizeResourceValue(
+        'idleRefrigeratedTrucks',
+        String(resources.idleRefrigeratedTrucks)
+      ),
+      dryIceStock: sanitizeResourceValue('dryIceStock', String(resources.dryIceStock)),
+      driverEtaMinutes: sanitizeResourceValue(
+        'driverEtaMinutes',
+        String(resources.driverEtaMinutes)
+      ),
+      nearbyColdStorage: selectedColdStorage
+    };
 
     const steps: DisposalStep[] = [];
     let stepIndex = 1;
@@ -79,7 +133,7 @@ const VehicleDetailPage: React.FC = () => {
         phone: alarm.driverPhone,
         role: '驾驶员',
         status: 'pending',
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toLocaleString('zh-CN', { hour12: false })
       });
     }
 
@@ -92,7 +146,7 @@ const VehicleDetailPage: React.FC = () => {
           phone: '000-00000000',
           role: '补冷点',
           status: 'pending',
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toLocaleString('zh-CN', { hour12: false })
         });
       });
     }
@@ -105,7 +159,7 @@ const VehicleDetailPage: React.FC = () => {
         phone: '000-00000000',
         role: '货主',
         status: 'pending',
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toLocaleString('zh-CN', { hour12: false })
       });
     }
 
@@ -124,10 +178,7 @@ const VehicleDetailPage: React.FC = () => {
       overallStatus: 'pending',
       steps,
       suggestion: plan.suggestion,
-      resources: {
-        ...resources,
-        nearbyColdStorage: selectedColdStorage
-      }
+      resources: safeResources
     };
 
     addDisposalOrder(newOrder);
@@ -152,6 +203,16 @@ const VehicleDetailPage: React.FC = () => {
       </View>
     );
   }
+
+  const displayTrucks = sanitizeResourceValue(
+    'idleRefrigeratedTrucks',
+    String(resources.idleRefrigeratedTrucks)
+  );
+  const displayDryIce = sanitizeResourceValue('dryIceStock', String(resources.dryIceStock));
+  const displayEta = sanitizeResourceValue(
+    'driverEtaMinutes',
+    String(resources.driverEtaMinutes)
+  );
 
   return (
     <View className={styles.page}>
@@ -261,21 +322,21 @@ const VehicleDetailPage: React.FC = () => {
 
         <View className={styles.formRow}>
           <View className={classNames(styles.formItem, styles.formRowItem)}>
-            <Text className={styles.formLabel}>空闲冷藏车(辆)</Text>
+            <Text className={styles.formLabel}>空闲冷藏车(0-50辆)</Text>
             <Input
               className={styles.formInput}
               type="number"
-              value={String(resources.idleRefrigeratedTrucks)}
+              value={String(displayTrucks)}
               onInput={(e) => handleInputChange('idleRefrigeratedTrucks', e.detail.value)}
               placeholder="0"
             />
           </View>
           <View className={classNames(styles.formItem, styles.formRowItem)}>
-            <Text className={styles.formLabel}>干冰库存(kg)</Text>
+            <Text className={styles.formLabel}>干冰库存(0-500kg)</Text>
             <Input
               className={styles.formInput}
               type="number"
-              value={String(resources.dryIceStock)}
+              value={String(displayDryIce)}
               onInput={(e) => handleInputChange('dryIceStock', e.detail.value)}
               placeholder="0"
             />
@@ -283,11 +344,11 @@ const VehicleDetailPage: React.FC = () => {
         </View>
 
         <View className={styles.formItem}>
-          <Text className={styles.formLabel}>司机预计到达(分钟)</Text>
+          <Text className={styles.formLabel}>司机预计到达(1-600分钟)</Text>
           <Input
             className={styles.formInput}
             type="number"
-            value={String(resources.driverEtaMinutes)}
+            value={String(displayEta)}
             onInput={(e) => handleInputChange('driverEtaMinutes', e.detail.value)}
             placeholder="30"
           />
